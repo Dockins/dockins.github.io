@@ -26,23 +26,43 @@
 <h3>
 <a id="embrace-docker" class="anchor" href="#embrace-docker" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Embrace Docker.</h3>
 
-<p>Jenkins uses it's own mechanisms to control build processes on remote "agents" (aka "slaves"). Docker API allows to control remote processes as well. We prefer the later. Actually, we have plan to fully remove need for Jenkins remoting</p>
+Docker and Jenkins at some time overlap in the way they can manage build processes and resources. Our goal here is to explore Docker impact on Jenkins
+design to benefit Docker's features when they do a better job.
 
-<p>Docker offer isolated, customizable environment to run process(es). We want end-user to get total flexibility on this.</p>
-
-<p>Docker can run containers as a composed set of services (aka docker-compose or kubernetes pods). We want to rely on this for end-user to compose a build/test environment for CI/CD, and not consider a container as a lightweight virtual machine.</p>
-
-<p>Docker offer volumes and volume-drivers to manage data persistence and/or replication with low level control on actual infrastructure. We want to rely on this for build workspace, vs letting Jenkins guess the best node to run build on. </p>
+<ul>
+<li>Jenkins uses it's own mechanisms to control build processes on remote "agents" (aka "slaves"). Docker API allows to control remote processes as well. We prefer the later. Actually, we have plan to fully remove need for Jenkins remoting</li>
+<li>Docker offer isolated, customizable environment to run process(es). We want end-user to get total flexibility on this.</li>
+<li>Docker can run containers as a composed set of services (aka docker-compose or kubernetes pods). We want to rely on this for end-user to compose a build/test environment for CI/CD, and not consider a container as a lightweight virtual machine.</li>
+<li>Docker offer volumes and volume-drivers to manage data persistence and/or replication with low level control on actual infrastructure. We want to rely on this for build workspace, vs letting Jenkins guess the best node to run build on. </li>
+</ul>
 
 <h3>
 <a id="docker-executor" class="anchor" href="#docker-executor" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Docker executor.</h3>
 
 <p>docker-slaves-plugin is our first attempt to achieve some of those goals. It runs a set of ephemeral docker containers to host the build, based on configuration set by end user directly in job configuration.</p>
+This project is released, not strictly speaking "<em>ready for production</em>" as there's some glitches we'd like to address and some extension
+point to be defined. Anyway it is stable enough so hundred people already adopted it :P
+<p>
+Docker-slaves relies on docker composability to run a set of containers with shared resources (i.e. workspace and network). We use this to run 
+jenkins remote agent plumbing in a container end-user don't have to wory about, in addition to build container that can run arbitrary image, as
+well as "<em>side containers</em>" to provide test resources (test database, selenium headless browser, ...)
+<p>
+This plugin has a high potential as it is fully compatible with all Jenkins plugins, do support Jenkins Pipeline, and could in near future 
+support docker-compose syntax as well as run on docker orchestrator (kubernetes or mesos for sample) in addition to plain docker/swarm.
+
 
 <h3>
 <a id="docker-pipeline" class="anchor" href="#docker-pipeline" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Docker Pipeline.</h3>
 
 <p>docker-slaves-plugin do support pipeline, but still relies on executing arbitrary pipeline steps, and as such on jenkins remoting. We plan to offer an alternative pipeline-specific approach to only support shell commands, and run container detached. Doing this, we can just wait for the container to stop (listening on docker events to get notified) and don't need long-running-task plugin.</p>
+Main idea of this plugin is to rely <em>only</em> on Docker, and drop Jenkins remoting. This make it fully incompatible with other Jenkins plugins,
+so we will have to re-implement the relevant CI/CD features. Sounds crazy, but we thing it's the best way to explore "<em>how Jenkins would look if Docker existed when it was created</em>".
+<p>
+It <em>might</em> be possible to be some way compatible with Jenkins plugins, by exposing some remoting stub to plugins, which would only support a subset
+of Jenkins remoting API, typically re-implement FilePath remote file abstraction with plain docker commands (typically, <code>docker cp</code>).
+This is just an assumption so far, doing this is a huge effort, probably simpler for us to define our own API and offer plugin adapters for the most requested ones.
+<p>
+This plugin is in early proof-of-concept stage. 
 
 <p>See <a href="https://gist.github.com/ndeloof/d701cbe1b11deb07dcef729776736361">draft design doc</a></p>
 
@@ -50,6 +70,9 @@
 <a id="declarative-pipeline" class="anchor" href="#declarative-pipeline" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Declarative Pipeline.</h3>
 
 <p>A longer terms goal is to offer a declarative pipeline. As pipeline let end-user do arbitrary groovy scripting, it require sandboxing and increased complexity. This can make sense for some use-cases but we want to offer a KISS-level pipeline experience, inspired by travis-ci|circle-ci|drone.io. We can model pipeline stages as docker container(s) running some commands.</p>
+<p>By design, such a DSL pipeline would offer limited extensibility. This would let us gain full control on the set of supported features,
+and would make it possible to just translate into docker-pipeline Groovy DSL code to benefit Jenkins Pipeline existing infrastructure and
+active development effort.</p>
 
 <p>see <a href="https://gist.github.com/ndeloof/7e0bf5d31b71c87c4fcf4c67f8a3dc51">draft design doc</a></p>
 
