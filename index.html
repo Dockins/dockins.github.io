@@ -56,7 +56,7 @@ support docker-compose syntax as well as run on docker orchestrator (kubernetes 
 
 <p>docker-slaves-plugin do support pipeline, but still relies on executing arbitrary pipeline steps, and as such on jenkins remoting. We plan to offer an alternative pipeline-specific approach to only support shell commands, and run container detached. Doing this, we can just wait for the container to stop (listening on docker events to get notified) and don't need long-running-task plugin.</p>
 Main idea of this plugin is to rely <em>only</em> on Docker, and drop Jenkins remoting. This make it fully incompatible with other Jenkins plugins,
-so we will have to re-implement the relevant CI/CD features. Sounds crazy, but we thing it's the best way to explore "<em>how Jenkins would look if Docker existed when it was created</em>".
+so we will have to re-implement the relevant CI/CD features. Sounds crazy, but we think it's the best way to explore "<em>how Jenkins would look if Docker existed when it was created</em>".
 <p>
 It <em>might</em> be possible to be some way compatible with Jenkins plugins, by exposing some remoting stub to plugins, which would only support a subset
 of Jenkins remoting API, typically re-implement FilePath remote file abstraction with plain docker commands (typically, <code>docker cp</code>).
